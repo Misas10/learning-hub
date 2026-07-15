@@ -1,0 +1,138 @@
+<meta charset="utf-8">
+<title>Lesson 1 · The Request's Journey</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/quiz.js"></script>
+
+<header>
+  <div class="kicker">System Design · Lesson 1</div>
+  <h1>The Request's Journey</h1>
+  <p class="lead">Before we design anything big, we need the atom that every big system is built from: one request, from your phone to a server and back.</p>
+</header>
+
+<main>
+
+  <div class="mission">
+    <strong>Why this, first?</strong> Your mission is to open the hood on YouTube, Netflix, Twitter and WhatsApp and actually understand them. Every one of those — no exceptions — is millions of copies of the single round trip you'll learn here. Master the atom and the molecules get easy.
+  </div>
+
+  <h2>The whole internet, in one shape</h2>
+
+  <p>Almost every app you use has the same basic shape: a <span class="term">client</span> asks, a <span class="term">server</span> answers. This is the <a href="../reference/glossary.html#client-server">client–server model</a>.</p>
+
+  <ul>
+    <li>The <strong>client</strong> is the program that <em>wants</em> something — the YouTube app on your phone, a browser tab, the Discord window on your laptop.</li>
+    <li>The <strong>server</strong> is a program running on a computer in a data centre that <em>listens</em> for requests and sends back answers.</li>
+  </ul>
+
+  <p>The client never has the data itself. When you open Twitter, your phone is nearly empty of tweets — it has to <em>go ask</em> a server: "what's in my feed?" That ask-and-answer is a <a href="../reference/glossary.html#request-response">request and response</a>.<span class="cite">1</span></p>
+
+  <h2>Press play: a trace</h2>
+
+  <p>Let's follow one real request. You tap a video on YouTube. Here's the journey, step by step:</p>
+
+  <figure>
+    <div class="diagram">   YOU TAP PLAY
+        │
+        ▼
+   ┌───────────┐   (1) "Where is youtube.com?"
+   │  CLIENT   │ ───────────────────────────────►  ┌─────────┐
+   │ (the app) │ ◄───────────────────────────────  │   DNS   │
+   └───────────┘   (2) "It's at 142.250.72.14"     └─────────┘
+        │
+        │  (3) REQUEST: "give me video #abc123"
+        ▼
+   ┌───────────┐ ─────────────────────────────►  ┌──────────┐
+   │  CLIENT   │                                  │  SERVER  │
+   │           │ ◄─────────────────────────────  │          │
+   └───────────┘  (4) RESPONSE: the video data    └──────────┘
+        │
+        ▼
+   VIDEO PLAYS   ⟵ the whole trip took, say, 90 ms</div>
+    <figcaption>One round trip. Every app you love is this, repeated at massive scale.</figcaption>
+  </figure>
+
+  <p>The four steps:</p>
+  <ol>
+    <li><strong>Find the server.</strong> The client only knows the name <code>youtube.com</code>, not where it lives. It asks <a href="../reference/glossary.html#dns">DNS</a> — the internet's phone book — which returns an <a href="../reference/glossary.html#ip">IP address</a>, the numeric location of a machine.</li>
+    <li><strong>Get the address back.</strong> Now the client knows <em>where</em> to send its request.</li>
+    <li><strong>Send the request.</strong> The client sends a message to that address: "give me video #abc123." What it's allowed to ask for is defined by the server's <a href="../reference/glossary.html#api">API</a> — the menu of questions the server agrees to answer.</li>
+    <li><strong>Get the response.</strong> The server does its work (finds the video) and sends the data back. Your app plays it.</li>
+  </ol>
+
+  <p>That entire round trip has a duration — its <a href="../reference/glossary.html#latency">latency</a>. When something "feels instant," latency was low (tens of milliseconds). When the spinner spins, it wasn't. Almost everything in system design is, ultimately, a fight to keep latency low while serving enormous <a href="../reference/glossary.html#throughput">throughput</a> (many requests at once).</p>
+
+  <div class="aside">
+    <strong>Naming trap:</strong> "server" means both the <em>software</em> that listens and the <em>machine</em> it runs on — people use it both ways. One physical machine can run many server programs; one server program can run across many machines. We'll untangle this in Lesson 2.
+  </div>
+
+  <h2>Recall before you check</h2>
+
+  <p>Retrieval — pulling an answer from memory before seeing it — is what makes knowledge stick. Try each before you open it.</p>
+
+  <details class="recall">
+    <summary>Why can't your phone just show your Twitter feed without talking to a server?</summary>
+    Because the client holds almost no data of its own. The tweets live on Twitter's servers; your phone must send a <em>request</em> and wait for the <em>response</em> before it has anything to show. The client asks; the server answers.
+  </details>
+
+  <details class="recall">
+    <summary>What job does DNS do, and why is it needed before any request?</summary>
+    DNS translates a human-friendly name (<code>youtube.com</code>) into the numeric IP address of a machine. A request can't be sent until the client knows <em>where</em> to send it — so the DNS lookup happens first.
+  </details>
+
+  <details class="recall">
+    <summary>What's the difference between latency and throughput?</summary>
+    Latency = how long <em>one</em> round trip takes (speed). Throughput = how <em>many</em> requests are handled per second (volume). A system can have low latency but low throughput, or vice versa — they're different problems.
+  </details>
+
+  <h2>Check yourself</h2>
+
+  <div class="quiz" data-answer="1"
+       data-explain="The client initiates; it holds little data and must ask a server for what it needs.">
+    <div class="q">In the client–server model, which side <em>initiates</em> the request?</div>
+    <button class="opt">The server begins</button>
+    <button class="opt">The client begins</button>
+    <button class="opt">The router begins</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="2"
+       data-explain="DNS is the phone book: it maps the name youtube.com to an IP address so the request knows where to go.">
+    <div class="q">What does the client use DNS for?</div>
+    <button class="opt">To cache the video files</button>
+    <button class="opt">To encrypt the sent data</button>
+    <button class="opt">To find the server address</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="0"
+       data-explain="Latency is the duration of a single round trip; throughput is how many requests are served per second.">
+    <div class="q">"90&nbsp;ms for one round trip" is a measure of what?</div>
+    <button class="opt">The latency of request</button>
+    <button class="opt">The throughput of server</button>
+    <button class="opt">The bandwidth of network</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="primary-source">
+    <span class="label">Primary source — read next</span>
+    <a href="https://github.com/donnemartin/system-design-primer#system-design-topics-start-here">The System Design Primer — "Start Here"</a> (Donne Martin). The opening sections on the client, DNS, and the request path reinforce exactly this lesson, with links to go deeper. Free and canonical.
+  </div>
+
+  <div class="mission">
+    <strong>The cliffhanger.</strong> YouTube gets over a billion requests. <em>One</em> server would melt instantly. So the very next question is: how do you put <em>many</em> servers behind one name, and share the load? That's <strong>Lesson 2 — One Server Becomes Many</strong>, where you'll meet the load balancer.
+  </div>
+
+  <div class="ask-teacher">
+    <strong>I'm your teacher — ask me anything.</strong> Fuzzy on what an IP address really is? Want to know what's actually inside a "request"? Curious how this changes for a live video vs. a stored one? Just ask in the chat. No question is too small; that's what I'm here for.
+  </div>
+
+  <nav class="lesson-nav">
+    <span></span>
+    <span>Next: Lesson 2 — One Server Becomes Many →</span>
+  </nav>
+
+  <footer>
+    <p><span class="cite">1</span> Client–server model &amp; request path: <a href="https://github.com/donnemartin/system-design-primer">The System Design Primer</a>; conceptual grounding in <a href="https://book.mixu.net/distsys/">Distributed Systems for Fun and Profit</a>. See the full <a href="../RESOURCES.md">resource list</a> and the <a href="../reference/glossary.html">glossary</a>.</p>
+  </footer>
+
+</main>

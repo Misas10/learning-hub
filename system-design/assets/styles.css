@@ -1,0 +1,242 @@
+/* ============================================================
+   Shared stylesheet for the System Design course.
+   Linked by every lesson and reference doc so the whole
+   course reads as one consistent, print-friendly document.
+   Tufte-inspired: serif body, generous margins, readable measure.
+   ============================================================ */
+
+:root {
+  --ink:        #1a1a1a;
+  --ink-soft:   #4a4a4a;
+  --paper:      #fdfcf9;
+  --rule:       #e2ddd2;
+  --accent:     #7a2e12;   /* brick red, for links + emphasis */
+  --accent-bg:  #f6efe6;   /* warm highlight */
+  --good:       #1f6b3b;
+  --bad:        #9a2323;
+  --code-bg:    #f2efe8;
+  --measure:    38rem;     /* readable line length */
+}
+
+html { font-size: 18px; }
+
+body {
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.55;
+  margin: 0;
+  padding: 0 1.5rem;
+}
+
+/* Everything centres on a readable measure */
+main, header, footer { max-width: var(--measure); margin: 0 auto; }
+
+header { padding: 3rem 0 1rem; }
+
+/* --- Kicker / breadcrumb above the title --- */
+.kicker {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+}
+
+h1 {
+  font-size: 2.1rem;
+  line-height: 1.15;
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+h2 {
+  font-size: 1.4rem;
+  margin: 2.4rem 0 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+}
+h3 { font-size: 1.1rem; margin: 1.8rem 0 0.4rem; }
+
+p, li { font-size: 1.02rem; }
+
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(122,46,18,0.3); }
+a:hover { border-bottom-color: var(--accent); }
+
+/* --- Lead paragraph --- */
+.lead { font-size: 1.15rem; color: var(--ink-soft); font-style: italic; }
+
+/* --- The "why this matters" mission tie-in box --- */
+.mission {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  padding: 0.8rem 1.1rem;
+  margin: 1.6rem 0;
+  font-size: 0.95rem;
+}
+.mission strong { color: var(--accent); }
+
+/* --- Sidenote / aside --- */
+.aside {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--rule);
+  padding-left: 0.9rem;
+  margin: 1.2rem 0;
+}
+
+/* --- Inline code + code blocks --- */
+code {
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+pre {
+  background: var(--code-bg);
+  padding: 1rem 1.2rem;
+  border-radius: 5px;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+}
+pre code { background: none; padding: 0; }
+
+/* --- Figures / ASCII diagrams --- */
+.diagram {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  background: #fffef9;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 1.2rem;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink);
+}
+figcaption {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* --- Citations --- */
+.cite { font-size: 0.8rem; color: var(--ink-soft); vertical-align: super; }
+
+/* --- Key term (links to glossary) --- */
+.term { font-style: italic; border-bottom: 1px dotted var(--ink-soft); }
+
+/* ============================================================
+   Quiz widget (paired with assets/quiz.js)
+   ============================================================ */
+.quiz {
+  margin: 1.4rem 0;
+  padding: 1.2rem 1.3rem;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.quiz .q { font-weight: 700; margin-bottom: 0.8rem; }
+.quiz .opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.98rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.4rem 0;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.quiz .opt:hover { background: var(--accent-bg); }
+.quiz .opt.correct { background: #e7f3ea; border-color: var(--good); color: var(--good); }
+.quiz .opt.wrong   { background: #f7e9e9; border-color: var(--bad);  color: var(--bad); }
+.quiz .opt:disabled { cursor: default; }
+.quiz .feedback {
+  margin-top: 0.7rem;
+  font-size: 0.92rem;
+  min-height: 1.2em;
+}
+.quiz .feedback.show { padding: 0.6rem 0.8rem; border-radius: 5px; background: var(--accent-bg); }
+
+/* --- Reveal / self-test card (recall before you check) --- */
+.recall {
+  margin: 1.4rem 0;
+  padding: 1.1rem 1.3rem;
+  border: 1px dashed var(--ink-soft);
+  border-radius: 6px;
+  background: #fff;
+}
+.recall summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent);
+}
+.recall[open] summary { margin-bottom: 0.7rem; }
+
+/* ============================================================
+   Navigation footer between lessons
+   ============================================================ */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 3rem 0 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+}
+
+.ask-teacher {
+  background: var(--accent-bg);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin: 2rem 0 1rem;
+  font-size: 0.95rem;
+}
+.ask-teacher strong { color: var(--accent); }
+
+.primary-source {
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin: 1.6rem 0;
+  font-size: 0.95rem;
+}
+.primary-source .label {
+  font-family: -apple-system, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+footer {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  padding: 2rem 0 3rem;
+}
+
+/* ============================================================
+   Print — these are meant to be kept and printed
+   ============================================================ */
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .quiz .opt:hover { background: var(--paper); }
+  a { color: var(--ink); border: none; }
+  .lesson-nav, .ask-teacher { display: none; }
+}
+
+@media (max-width: 640px) {
+  html { font-size: 16px; }
+  body { padding: 0 1rem; }
+}

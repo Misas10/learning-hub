@@ -1,0 +1,40 @@
+<meta charset="utf-8">
+<title>Glossary · System Design</title>
+<link rel="stylesheet" href="../assets/styles.css">
+
+<header>
+  <div class="kicker">System Design · Reference</div>
+  <h1>Glossary</h1>
+  <p class="lead">The shared vocabulary of the course. Every lesson uses these terms exactly as defined here. Grows as we go.</p>
+</header>
+
+<main>
+  <p class="aside">Terms are grouped loosely by theme. Anchor examples come from the systems you're curious about: YouTube/Netflix/Spotify and Twitter/WhatsApp/Discord.</p>
+
+  <h2>The request path</h2>
+
+  <p id="client"><strong>Client</strong> — The program that <em>asks</em> for something: your phone's YouTube app, a browser tab, the Discord desktop app. It initiates requests and shows you the result.</p>
+
+  <p id="server"><strong>Server</strong> — A program (running on a computer somewhere) that <em>listens</em> for requests and sends back responses. "A server" can mean the software or the machine it runs on.</p>
+
+  <p id="client-server"><strong>Client–server model</strong> — The basic shape of almost every app you use: many clients send requests to one or more servers, which do work and reply. <a href="../lessons/0001-the-requests-journey.html">Lesson 1</a>.</p>
+
+  <p id="request-response"><strong>Request / Response</strong> — One round trip. The client sends a <em>request</em> ("give me my feed"); the server sends back a <em>response</em> (the feed data). Most web communication is this back-and-forth.</p>
+
+  <p id="ip"><strong>IP address</strong> — The numeric "postal address" of a machine on a network (e.g. <code>142.250.72.14</code>). Requests need one to know where to go.</p>
+
+  <p id="dns"><strong>DNS</strong> (Domain Name System) — The internet's phone book. Translates a human name like <code>youtube.com</code> into the IP address of a server. Your client does a DNS lookup before it can send a request.</p>
+
+  <p id="latency"><strong>Latency</strong> — How long one round trip <em>takes</em> (e.g. 80&nbsp;ms). Low latency = feels instant. This is why where a server physically sits matters.</p>
+
+  <p id="throughput"><strong>Throughput</strong> — How <em>many</em> requests a system handles per unit time (e.g. 50,000 requests/second). Latency is speed of one; throughput is volume of many.</p>
+
+  <p id="api"><strong>API</strong> (Application Programming Interface) — The defined set of requests a server agrees to answer ("here are the questions you may ask me, and the shape of the answers"). The contract between client and server.</p>
+
+  <h2>Coming soon</h2>
+  <p class="aside">Load balancer, database, cache, CDN, replication, sharding, message queue, consistency, availability — added as each lesson introduces them.</p>
+
+  <footer>
+    <a href="../lessons/0001-the-requests-journey.html">← Lesson 1</a> · Part of the System Design course.
+  </footer>
+</main>
