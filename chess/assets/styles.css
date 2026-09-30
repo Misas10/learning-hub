@@ -1,5 +1,5 @@
 /* ============================================================
-   Shared stylesheet for the System Design course.
+   Shared stylesheet for the Chess course.
    Linked by every lesson and reference doc so the whole
    course reads as one consistent, print-friendly document.
    Tufte-inspired: serif body, generous margins, readable measure.
@@ -273,4 +273,55 @@ footer {
 @media (max-width: 640px) {
   html { font-size: 16px; }
   body { padding: 0 1rem; }
+}
+
+/* ============================================================
+   Chess board (paired with assets/board.js)
+   Markup: <div class="board" data-fen="..." data-marks="e6 b3"></div>
+   ============================================================ */
+.board {
+  display: grid;
+  grid-template-columns: 1.1rem repeat(8, 1fr);
+  width: 100%;
+  max-width: 21rem;
+  margin: 1.2rem auto 0.4rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.board .sq {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols2", "DejaVu Sans", sans-serif;
+  font-size: clamp(1.3rem, 6.2vw, 2rem);
+  line-height: 1;
+}
+.board .sq.light { background: #efe6d3; }
+.board .sq.dark  { background: #b89a78; }
+.board .sq.mark  { box-shadow: inset 0 0 0 3px var(--accent); }
+/* Both colours use the solid glyphs; colour + outline tells them apart */
+.board .sq.w { color: #fff; text-shadow: 0 0 1px #000, 0 0 1px #000, 0 1px 1px #000, 1px 0 1px #000, -1px 0 1px #000, 0 -1px 1px #000; }
+.board .sq.b { color: #1a1a1a; }
+.board .coord {
+  font-size: 0.62rem;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-caption {
+  text-align: center;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+/* --- Numbered rule list for cheat sheets --- */
+.rules { padding-left: 1.2rem; }
+.rules li { margin: 0.5rem 0; }
+
+@media print {
+  .board .sq.dark { background: #ccc; }
+  .board, .quiz, .recall { break-inside: avoid; }
 }

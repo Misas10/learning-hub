@@ -1,0 +1,207 @@
+<meta charset="utf-8">
+<title>Lesson 3 · One Server Becomes Many</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/quiz.js"></script>
+
+<header>
+  <div class="kicker">System Design · Lesson 3</div>
+  <h1>One Server Becomes Many</h1>
+  <p class="lead">Promised in Lesson 1, deferred twice, finally here. The load balancer looks like a traffic cop — a box that spreads requests around. It isn't. Its real job is to tell you a hard truth about where your data is allowed to live.</p>
+</header>
+
+<main>
+
+  <div class="mission">
+    <strong>Why this, now?</strong> You've had one server since <a href="0001-the-requests-journey.html">Lesson 1</a>, and one server serves nobody at YouTube scale. This is the lesson where your architecture stops being a diagram and starts being a <em>system</em> — and it hands you the question that the rest of the course is really about.
+  </div>
+
+  <h2>The problem, restated from Lesson 1</h2>
+
+  <p>Lesson 1 ended on a cliffhanger: one server would melt under a billion requests. So: buy more servers. Easy.</p>
+
+  <p>Except you immediately hit a wall you already know about. Your client does a <a href="../reference/glossary.html#dns">DNS</a> lookup for <code>youtube.com</code> and gets back <em>an</em> <a href="../reference/glossary.html#ip">IP address</a> — one number, one machine. That's the whole mechanism from Lesson 1. So how do ten thousand servers hide behind one address?</p>
+
+  <p>Answer: DNS doesn't point at your servers at all. It points at <strong>one machine standing in front of them</strong> — the <a href="../reference/glossary.html#load-balancer">load balancer</a>. Your request goes there first, and it decides which server actually does the work.<span class="cite">1</span></p>
+
+  <figure>
+    <div class="diagram">                                    ┌──────────┐
+                              ┌────►│ server 1 │
+                              │     └──────────┘
+   ┌────────┐    ┌────────┐   │     ┌──────────┐
+   │ CLIENT │───►│   LB   │───┼────►│ server 2 │
+   └────────┘    └────────┘   │     └──────────┘
+        ▲             ▲       │     ┌──────────┐
+        │             │       └────►│ server 3 │
+   DNS gave you   this is what       └──────────┘
+   ONE address ── the address              ▲
+                  points to               who serves you
+                                          is now a coin flip</div>
+    <figcaption>The client's view is unchanged from Lesson 1: one name, one address, one request. Everything behind the LB is invisible to it.</figcaption>
+  </figure>
+
+  <p>Notice what didn't change. The client still resolves a name, still sends the same request, still waits. <em>Scaling is invisible from the outside.</em> That's the trick — and it's the same move you saw in Lesson 2, where live and stored video used the identical request shape.</p>
+
+  <h2>The one fact that changes everything</h2>
+
+  <div class="mission">
+    <strong>The whole lesson, in one line.</strong> The moment a load balancer exists, <em>you no longer control which server handles your request</em> — so every server must be able to answer <em>any</em> request. The servers must be <strong>interchangeable</strong>.
+  </div>
+
+  <p>That's the root fact. It sounds administrative. It is actually a brutal constraint, and everything below falls out of it.</p>
+
+  <p>NGINX is blunt about the reality: "each subsequent client's request can be potentially distributed to a different server. There is no guarantee that the same client will be always directed to the same server."<span class="cite">2</span> Request #1 hits server 2. Request #2 hits server 7. Nobody asked your permission.</p>
+
+  <h3>Consequence 1: your server is not allowed to remember you</h3>
+
+  <p>Here's where it bites. Say a user logs in. Request #1 lands on server 2, which stores "this user is logged in" in its own memory. Request #2 lands on server 7.</p>
+
+  <p>Server 7 has never heard of them. Logged out. Cart empty.</p>
+
+  <p>The server did nothing wrong — it remembered something. But <strong>memory is what makes servers non-interchangeable</strong>. Anything a server keeps in its own memory is a fact the other servers don't have, and the load balancer will happily route around it. This is <a href="../reference/glossary.html#state">state</a>, and it's the villain of this lesson.</p>
+
+  <p>So you have exactly two options:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th></th><th>Cheat: sticky sessions</th><th>Fix: move the state out</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>The idea</th><td>Pin each user to one server, always</td><td>Servers keep nothing; state lives elsewhere</td></tr>
+      <tr><th>How</th><td>Hash the client's IP, or use a cookie<span class="cite">2</span></td><td>Session goes to a shared store both servers read</td></tr>
+      <tr><th>Cost</th><td>Load spreads unevenly; if that server dies, the session dies with it</td><td>Every request now needs a trip to the store</td></tr>
+      <tr><th>Honest name</th><td>Hiding statefulness behind routing</td><td>Actually being stateless</td></tr>
+    </tbody>
+  </table>
+
+  <p>Sticky sessions are real and widely used — NGINX ships <code>ip-hash</code> precisely so "requests from the same client will always be directed to the same server."<span class="cite">2</span> But look at what you gave up: you re-broke interchangeability on purpose. Your load is now lumpy, and one dead machine logs a chunk of users out.</p>
+
+  <div class="mission">
+    <strong>This is the question the whole course is really about.</strong> "Move the state out" — out <em>where?</em> Some box that every server can reach, that's fast, that must never lose your data, and that now has all your servers hammering it. You just invented the database and the cache, and you invented them by <em>necessity</em> rather than by being told they exist. Every remaining lesson is, in some form, about where state lives and what that costs.
+  </div>
+
+  <h3>Consequence 2: the free win — it routes around the dead</h3>
+
+  <p>Interchangeability has a gift attached. If any server can answer any request, then a server dying is <em>survivable</em>: send its requests to the others.</p>
+
+  <p>The load balancer finds out who's alive with <a href="../reference/glossary.html#health-check">health checks</a> — polling each server, taking failures out of rotation. So the primer lists "preventing requests from going to unhealthy servers" alongside spreading load.<span class="cite">1</span></p>
+
+  <p>This is worth pausing on, because the name lies to you. "Load balancer" sounds like it's about <em>load</em>. But the same box is also how your system survives a machine catching fire at 3am. Availability isn't a separate feature you bolt on later — <strong>you got it for free the moment you made servers interchangeable</strong>. That's why statelessness is worth the pain.</p>
+
+  <h3>Consequence 3: you just built a single point of failure</h3>
+
+  <p>Look at the diagram again. Every request in your entire system now goes through one box.</p>
+
+  <p>You added servers so that no single machine could take you down — and then you put a single machine in front of all of them. The primer says it plainly: a lone load balancer "is a single point of failure," and fixing it means "multiple load balancers" in active-passive or active-active setups, "further increasing complexity."<span class="cite">1</span> It can also become a bottleneck in its own right.<span class="cite">1</span></p>
+
+  <p>So: who load balances the load balancer? Google's answer starts one layer earlier — DNS itself, returning several addresses so clients spread across multiple entry points, though they note DNS is a coarse instrument because caching and TTLs limit how fast you can change anything.<span class="cite">3</span></p>
+
+  <div class="aside">
+    <strong>The pattern to notice.</strong> Three lessons, three times: you solved a problem and the solution created the next problem. That's not you doing it wrong — that's the actual texture of the field. Nobody reaches a design with no problems left; you reach one whose problems you chose on purpose.
+  </div>
+
+  <h2>How it picks (briefly)</h2>
+
+  <p>Two knobs worth knowing, and no more than that for now.</p>
+
+  <p><strong>Which server?</strong> NGINX's default is round-robin: "requests to the application servers are distributed in a round-robin fashion."<span class="cite">2</span> Fine — <em>if</em> requests are uniform. They rarely are. Least-connected instead sends "the next request to the server with the least number of active connections," which NGINX says "allows controlling the load on application instances more fairly in a situation when some of the requests take longer to complete."<span class="cite">2</span></p>
+
+  <div class="aside">
+    <strong>A source-quality note, since it's a live lesson from last session:</strong> a blog I found while researching this claimed least-connections is "the best default for most web applications." NGINX — who <em>wrote</em> the thing — say round-robin is the default and least-connected is better <em>when request durations vary</em>. Not the same claim. When a vendor's docs and a listicle disagree, believe the vendor. That's a live example of the streaming problem from Lesson 2's research, which is why every claim here is quoted from someone who implements or operates it.
+  </div>
+
+  <p><strong>How deeply does it look?</strong> A <strong>layer 4</strong> balancer sees only IPs and ports — it forwards traffic without reading it. A <strong>layer 7</strong> balancer reads the actual HTTP request (headers, cookies, path), so it can route <em>on content</em>: send <code>/video/*</code> to the video fleet, billing to hardened machines. The primer states the tradeoff exactly: "At the cost of flexibility, layer 4 load balancing requires less time and computing resources than Layer 7, although the performance impact can be minimal on modern commodity hardware."<span class="cite">1</span> Cheap and blind, or smart and costly.</p>
+
+  <h2>Recall before you check</h2>
+
+  <p>Answer out loud first — badly, if necessary. Retrieving it wrong then seeing it beats reading it smoothly.</p>
+
+  <details class="recall">
+    <summary>Rebuild the lesson from the root fact: "you don't control which server gets your request." What follows?</summary>
+    Servers must be interchangeable → so a server must not keep anything in its own memory (state breaks interchangeability) → so either pin users to servers (sticky sessions, lumpy load, sessions die with the machine) or move state to a shared store (hello, database/cache) → and because any server can serve anyone, a dead server is survivable, which is where health checks and availability come from → but the balancer itself is now a single point of failure. If you can walk that chain, you have the lesson.
+  </details>
+
+  <details class="recall">
+    <summary>From Lesson 1: what does DNS actually return now that there are ten thousand servers?</summary>
+    The load balancer's address — not a server's. The client's experience is exactly Lesson 1: one name, one <a href="../reference/glossary.html#ip">IP</a>, one <a href="../reference/glossary.html#request-response">request</a>, waiting on <a href="../reference/glossary.html#latency">latency</a>. The entire fleet is invisible from outside. (Google's frontend layer complicates this — DNS can hand back several addresses to spread clients across entry points.<span class="cite">3</span>)
+  </details>
+
+  <details class="recall">
+    <summary>Interleave with Lesson 2: Netflix pre-positions films in caches near you. Does <em>that</em> box need to be stateless too?</summary>
+    Worth thinking about rather than answering fast. A cache is deliberately <em>full</em> of state — but it's state that's <strong>identical everywhere and losable</strong>. If an <a href="../reference/glossary.html#prepositioning">pre-filled</a> cache dies, you refetch from origin; nothing is destroyed. Your login session in server 2's RAM is the opposite: unique to that machine, and gone forever if it dies. That's the distinction that matters — not "state or no state" but <em>can this state be rebuilt from somewhere else?</em>
+  </details>
+
+  <h2>Check yourself</h2>
+
+  <div class="quiz" data-answer="0"
+       data-explain="Requests land on whichever server the balancer picks, and it won't consult you. So any server must be able to serve any request — interchangeability. Everything else in this lesson follows from it.">
+    <div class="q">A load balancer may send request #2 to a different server than #1. What must therefore be true?</div>
+    <button class="opt">Any server answers any request</button>
+    <button class="opt">Each server holds unique data</button>
+    <button class="opt">Every server stores its sessions</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="1"
+       data-explain="Session data in one server's RAM is invisible to the others. The next request lands elsewhere, that machine has never heard of you, and you're logged out. Memory is what makes servers non-interchangeable.">
+    <div class="q">Why does keeping a login session in a server's own memory break?</div>
+    <button class="opt">Other servers run too slowly</button>
+    <button class="opt">Other servers cannot see it</button>
+    <button class="opt">Other servers reject the cookie</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="2"
+       data-explain="Pinning users to servers re-breaks interchangeability on purpose: one user's heavy session can't be shared out, so load goes lumpy — and if that server dies, its sessions die with it.">
+    <div class="q">What is the main cost of sticky sessions?</div>
+    <button class="opt">Requests must become entirely encrypted</button>
+    <button class="opt">Servers must become physically identical</button>
+    <button class="opt">Load can become unevenly distributed</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="0"
+       data-explain="Health checks let it drop dead servers from rotation. Because any server can serve anyone, one machine dying is survivable — availability comes free with interchangeability, despite the name saying 'load'.">
+    <div class="q">Besides spreading load, what else does a load balancer give you?</div>
+    <button class="opt">It routes around dead servers</button>
+    <button class="opt">It stores the user sessions</button>
+    <button class="opt">It encrypts the video segments</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="1"
+       data-explain="Every request now flows through one box. You added servers so no single machine could kill you, then put a single machine in front of them all — which is why real deployments run several in active-passive or active-active.">
+    <div class="q">You put one load balancer in front of ten servers. What have you just created?</div>
+    <button class="opt">A single source of truth</button>
+    <button class="opt">A single point of failure</button>
+    <button class="opt">A single layer of caching</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="primary-source">
+    <span class="label">Primary source — read next</span>
+    <a href="https://github.com/donnemartin/system-design-primer#load-balancer">The System Design Primer — "Load balancer"</a> (Donne Martin). Short, free, and the canonical map: L4 vs L7, the algorithms, and — unusually honest for an intro — an explicit <em>disadvantages</em> list. Read that disadvantages section slowly; it's the part most tutorials skip.
+    <br><br>
+    <strong>Then, if you want the real thing:</strong> <a href="https://sre.google/sre-book/load-balancing-frontend/">Google's SRE book, "Load Balancing at the Frontend"</a> — free online, written by the people running it at planetary scale. It'll show you how much the tidy diagram above is hiding. Harder than the primer; skim it and let it be humbling rather than fully understood.
+  </div>
+
+  <div class="mission">
+    <strong>Where this goes next.</strong> You've now got a shape with a hole in it, and the hole has a name: <em>where does the state live?</em> Two candidates, both already teased — the <strong>database</strong> (the box that must never lose your data, now with every server hammering it) or the <strong>CDN</strong> (still owed from Lesson 2, and the centre of gravity for your streaming anchor). Your pick. Or ask something else — that's twice now that your question beat my plan.
+  </div>
+
+  <div class="ask-teacher">
+    <strong>I'm your teacher — ask me anything.</strong> Some threads I deliberately left dangling: if every server hits one shared session store, isn't <em>that</em> the new single point of failure (yes — and it's a great question)? What actually happens to in-flight requests when a server dies mid-response? How does a load balancer handle a WebSocket that stays open for hours — doesn't that break round-robin entirely? Why doesn't the LB just cache the responses itself? Ask away; that's what I'm here for.
+  </div>
+
+  <nav class="lesson-nav">
+    <span><a href="0002-live-vs-stored-video.html">← Lesson 2 — Live vs Stored Video</a></span>
+    <span>Next: Lesson 4 — you choose</span>
+  </nav>
+
+  <footer>
+    <p><span class="cite">1</span> Load balancer role, L4 vs L7, SSL termination, and the disadvantages list (bottleneck, complexity, single point of failure): <a href="https://github.com/donnemartin/system-design-primer#load-balancer">The System Design Primer</a>.
+    <span class="cite">2</span> Round-robin as default, least-connected, ip-hash, and the no-guarantee-of-same-server quote: <a href="https://nginx.org/en/docs/http/load_balancing.html">NGINX — HTTP Load Balancing</a> (the implementer's own docs).
+    <span class="cite">3</span> DNS-based load balancing and its limits (resolver caching, TTLs): <a href="https://sre.google/sre-book/load-balancing-frontend/">Google SRE Book — Load Balancing at the Frontend</a>.
+    See the full <a href="../RESOURCES.md">resource list</a> and the <a href="../reference/glossary.html">glossary</a>.</p>
+  </footer>
+
+</main>

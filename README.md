@@ -13,3 +13,14 @@ apps I use every day (YouTube, Netflix, Spotify, Twitter, WhatsApp, Discord) act
 - **[RESOURCES.md](./system-design/RESOURCES.md)** — curated, high-trust sources
 
 Start with **[Lesson 1 — The Request's Journey](./system-design/lessons/0001-the-requests-journey.html)**.
+
+## [chess/](./chess/)
+
+Climbing from ~1000 to 1500 rapid on chess.com: converting won games, finding plans, basic endgames.
+
+- **[MISSION.md](./chess/MISSION.md)** — why I'm learning this
+- **[lessons/](./chess/lessons/)** — the lessons (open the `.html` files in a browser)
+- **[reference/](./chess/reference/)** — glossary and cheat sheets
+- **[RESOURCES.md](./chess/RESOURCES.md)** — curated, high-trust sources
+
+Start with **[Lesson 1 — Winning the Won Game](./chess/lessons/0001-winning-the-won-game.html)**.

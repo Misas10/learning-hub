@@ -31,10 +31,49 @@
 
   <p id="api"><strong>API</strong> (Application Programming Interface) — The defined set of requests a server agrees to answer ("here are the questions you may ask me, and the shape of the answers"). The contract between client and server.</p>
 
+  <h2>Video delivery</h2>
+
+  <p id="segment"><strong>Segment</strong> — A small chunk of a video, typically a few seconds long, stored as its own file. Video is never delivered as one big download; it's delivered as a run of segments fetched back to back. <a href="../lessons/0002-live-vs-stored-video.html">Lesson 2</a>.</p>
+
+  <p id="manifest"><strong>Manifest</strong> (or <em>playlist</em>) — A text file listing a video's segments in order. The client fetches it first to learn what to request. In HLS it's an <code>.m3u8</code> file.</p>
+
+  <p id="vod"><strong>VOD</strong> (Video on Demand) — Stored video: every segment exists before anyone presses play. Its manifest is final and never changes, so the client fetches it once and can seek anywhere.</p>
+
+  <p id="live-edge"><strong>Live edge</strong> — The newest available segment of a live stream: the boundary of what exists. Players deliberately sit a few segments <em>behind</em> it, trading freshness for a buffer that absorbs network wobble.</p>
+
+  <p id="prepositioning"><strong>Pre-positioning</strong> — Copying content to caches near viewers <em>before</em> they ask for it (Netflix fills its appliances nightly). Only possible for stored video — you cannot pre-position bytes that don't exist yet.</p>
+
+  <p id="request-collapsing"><strong>Request collapsing</strong> (coalescing) — Merging many simultaneous requests for the <em>same</em> uncached object into a single fetch to the origin, then serving all of them from that one response. What makes a live stream's synchronised stampede affordable.</p>
+
+  <p id="thundering-herd"><strong>Thundering herd</strong> — A crowd of requests hitting one uncached resource at the same instant. Live video causes this by nature: every new segment is born cold and wanted immediately by everyone.</p>
+
+  <h2>Scaling out</h2>
+
+  <p id="load-balancer"><strong>Load balancer</strong> — A machine that sits in front of many servers and decides which one handles each request. DNS points at <em>it</em>, not at your servers, so the whole fleet hides behind one address. Spreads load <em>and</em> routes around dead servers. <a href="../lessons/0003-one-server-becomes-many.html">Lesson 3</a>.</p>
+
+  <p id="horizontal-scaling"><strong>Horizontal scaling</strong> — Handling more load by adding <em>more machines</em> (rather than a bigger one, which is <em>vertical</em> scaling). Cheaper at scale, but only works if the machines are interchangeable.</p>
+
+  <p id="interchangeable"><strong>Interchangeability</strong> — The property that any server can answer any request. What a load balancer requires, and what <a href="#state">state</a> destroys. Nearly every design rule in this course exists to protect it.</p>
+
+  <p id="state"><strong>State</strong> — Anything a server remembers between requests (your login, your cart). State kept in one server's memory is invisible to the others, which is why it breaks horizontal scaling. The central question of system design is <em>where state is allowed to live</em>.</p>
+
+  <p id="stateless"><strong>Stateless</strong> — A server that keeps nothing of its own between requests; everything it needs comes with the request or from a shared store. Stateless servers are interchangeable, disposable, and survivable.</p>
+
+  <p id="sticky-session"><strong>Sticky session</strong> (session affinity) — Pinning a user to one server so their in-memory state stays valid (e.g. NGINX's <code>ip-hash</code>). Doesn't make an app stateless — it hides statefulness behind routing. Costs: lumpy load, and sessions die with the machine.</p>
+
+  <p id="health-check"><strong>Health check</strong> — The load balancer periodically polling servers to see who's alive, pulling failures out of rotation. How a fleet survives one machine dying.</p>
+
+  <p id="spof"><strong>Single point of failure</strong> (SPOF) — Any component whose death kills the system. A lone load balancer is one — which is why real deployments run several (active-passive or active-active).</p>
+
+  <p id="l4-l7"><strong>Layer 4 / Layer 7</strong> — How deeply a balancer looks. L4 sees only IPs and ports (fast, blind). L7 reads the actual HTTP request — headers, cookies, path — so it can route on content (flexible, costlier).</p>
+
   <h2>Coming soon</h2>
-  <p class="aside">Load balancer, database, cache, CDN, replication, sharding, message queue, consistency, availability — added as each lesson introduces them.</p>
+  <p class="aside">Database, cache, CDN, replication, sharding, message queue, consistency, availability — added as each lesson introduces them.</p>
 
   <footer>
-    <a href="../lessons/0001-the-requests-journey.html">← Lesson 1</a> · Part of the System Design course.
+    <a href="../lessons/0001-the-requests-journey.html">← Lesson 1</a> ·
+    <a href="../lessons/0002-live-vs-stored-video.html">Lesson 2</a> ·
+    <a href="../lessons/0003-one-server-becomes-many.html">Lesson 3</a> ·
+    Part of the System Design course.
   </footer>
 </main>

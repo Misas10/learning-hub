@@ -1,0 +1,201 @@
+<meta charset="utf-8">
+<title>Lesson 2 · Live vs Stored Video</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/quiz.js"></script>
+
+<header>
+  <div class="kicker">System Design · Lesson 2</div>
+  <h1>Live vs Stored Video</h1>
+  <p class="lead">You asked how the request changes when the video is live instead of stored. The answer is delightful: the request barely changes at all. One small fact changes — and everything else follows from it.</p>
+</header>
+
+<main>
+
+  <div class="mission">
+    <strong>Why this, now?</strong> You asked the question at the end of <a href="0001-the-requests-journey.html">Lesson 1</a>, so we're taking the detour. It's a good one: it takes the single round trip you already know and shows you how to <em>derive</em> an architecture from one constraint, instead of memorising two. That derivation move is the core skill of system design.
+  </div>
+
+  <h2>First: video isn't one big download</h2>
+
+  <p>The instinct is that pressing play downloads a video file. It doesn't. Video is chopped into <a href="../reference/glossary.html#segment">segments</a> — small files, typically a few seconds each — plus a <a href="../reference/glossary.html#manifest">manifest</a>: a text file listing the segments in order.<span class="cite">1</span></p>
+
+  <p>So playback is not one exotic request. It's the <em>ordinary</em> request from Lesson 1, on repeat:</p>
+
+  <ol>
+    <li><code>GET</code> the manifest → "here are the segments."</li>
+    <li><code>GET</code> segment 1, <code>GET</code> segment 2, <code>GET</code> segment 3… → play them back to back.</li>
+  </ol>
+
+  <p>This is true for a 2011 YouTube upload and for a live World Cup final. Same protocol, same plain HTTP requests, same shape you already learned. Hold onto that — it's why the comparison below is fair.</p>
+
+  <h2>The one fact that changes</h2>
+
+  <div class="mission">
+    <strong>The whole lesson, in one line.</strong> For stored video, <em>every segment already exists</em>. For live video, <em>the segment you want next has not been created yet</em>. Nobody has kicked the ball.
+  </div>
+
+  <p>That's it. That's the only real difference. Everything below is a <em>consequence</em> — and the useful exercise is to derive each one yourself before you read it.</p>
+
+  <h3>Consequence 1: the manifest stops holding still</h3>
+
+  <p>For stored video, the manifest is complete and final. The spec is blunt about it: a playlist marked <code>VOD</code> "MUST NOT change."<span class="cite">1</span> It ends with a tag literally called <code>EXT-X-ENDLIST</code> — <em>that's all of them, there will be no more</em>. Fetch it once and you're done forever.</p>
+
+  <p>A live manifest has no <code>EXT-X-ENDLIST</code>, because the story isn't over. And that absence obliges the server to keep writing: it "MUST make a new version of the Playlist file available that contains at least one new Media Segment."<span class="cite">1</span> So the client "MUST periodically reload" it.<span class="cite">1</span></p>
+
+  <p>This creates a request that <strong>has no equivalent in stored video</strong>: the poll. A live player sits in a loop asking "anything new? anything new? anything new?" — forever, for as long as you watch.</p>
+
+  <figure>
+    <div class="diagram">  STORED (the film)                 LIVE (the match)
+
+  GET manifest ──────►              GET manifest ──────►
+  ◄──── [1..900, ENDLIST]           ◄──── [41,42,43]        no ENDLIST
+        ↑ fetch once. done.               ↓ 6s later…
+                                    GET manifest ──────►
+  GET seg 1   ──────►               ◄──── [42,43,44]        one new segment
+  GET seg 2   ──────►                     ↓ 6s later…
+  GET seg 3   ──────►               GET manifest ──────►
+  GET seg 847 ──────►  ← seek!      ◄──── [43,44,45]        …forever
+  GET seg 848 ──────►
+        ↑ any segment, any order,   GET seg 45 ──────►      ← only the newest
+          as far ahead as you like        ↑ segment 46 does not exist yet</div>
+    <figcaption>Same requests. But stored video reads a finished list; live video watches a moving window.</figcaption>
+  </figure>
+
+  <h3>Consequence 2: you cannot buffer the future</h3>
+
+  <p>Notice what the diagram takes away from you. With a stored film you can jump to minute 47, and you can grab segments far ahead of playback — a deep buffer, which is your armour against a wobbly network. If your wifi drops for 20 seconds, you had 60 seconds banked, and you never notice.</p>
+
+  <p>Live has no future to fetch. The newest segment <em>is</em> the edge of reality — this is the <a href="../reference/glossary.html#live-edge">live edge</a>. You cannot bank 60 seconds ahead of a match that hasn't been played.</p>
+
+  <p>So a live player deliberately hangs <em>back</em> from the edge. The spec advises the client "SHOULD NOT choose a segment that starts less than three target durations from the end of the Playlist file," because "doing so can trigger playback stalls."<span class="cite">1</span> That's the trade in its rawest form: <strong>every second of safety buffer is a second of being behind live.</strong> It's why your stream shows the goal after you hear next door cheer.</p>
+
+  <div class="aside">
+    <strong>This is the shape of the whole field.</strong> Nobody "solved" this — they <em>chose</em>. Buffer more (safe, laggy) or buffer less (live, fragile). Lesson 1 said system design is a fight to keep latency low; here's the first time you can see what that fight actually costs.
+  </div>
+
+  <h3>Consequence 3: caching flips upside down</h3>
+
+  <p>Here's the part that pays off most, and it's about <em>time</em>.</p>
+
+  <p>Stored video has a luxury: it exists long before anyone wants it. So you can put copies near people <em>in advance</em>. Netflix does exactly this — it "pre-fills" its cache machines "with the appropriate content for your geographical location," with "nightly content fill and updates."<span class="cite">3</span> By the time you press play, the film may already be sitting in a box at your ISP. The request never travels far. Netflix's hard problem isn't speed — it's <em>prediction</em>: guessing which titles to ship where, before demand exists.</p>
+
+  <p>Live can't play that game at all. You cannot pre-position bytes that don't exist. The newest segment is, by definition, in <strong>nobody's</strong> cache the instant it's born. Every live segment starts cold. That sounds like a catastrophe — a million viewers, all missing the cache, all stampeding your origin server at once.</p>
+
+  <p>And now the twist:</p>
+
+  <div class="mission">
+    <strong>The thing that makes live hard is the same thing that makes it easy.</strong> A million viewers all want the <em>same</em> segment at the <em>same instant</em>. That synchronisation is the stampede — but it's also the most perfect cache locality you will ever be handed.
+  </div>
+
+  <p>Because the requests are identical, they can be merged. Fastly calls it <a href="../reference/glossary.html#request-collapsing">request collapsing</a>: "combining multiple requests for the same object into a single request to origin, and then potentially using the resulting response to satisfy all pending requests."<span class="cite">2</span> The first request goes to the origin; everyone else waits in line for that one answer and is served from it.</p>
+
+  <p>So a mob all screaming for the same thing is the <em>best</em> possible mob. One fetch feeds all of them. Stored video never gets this gift: at any moment your viewers are scattered across thousands of titles and thousands of positions within them — every request a different object.</p>
+
+  <h2>The comparison, assembled</h2>
+
+  <table class="compare">
+    <thead>
+      <tr><th></th><th>Stored (on-demand)</th><th>Live</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>The segments</th><td>All exist already</td><td>Newest one just born; next doesn't exist</td></tr>
+      <tr><th>Manifest requests</th><td>Fetched once, never changes</td><td>Re-fetched on a loop, forever</td></tr>
+      <tr><th>Seek / prefetch</th><td>Anywhere; buffer as deep as you like</td><td>No future to fetch; hang back from the edge</td></tr>
+      <tr><th>Cache state</th><td>Warm — pre-positioned before you ask</td><td>Cold — always, unavoidably</td></tr>
+      <tr><th>Request pattern</th><td>Scattered: many titles, many positions</td><td>Converged: everyone on one segment</td></tr>
+      <tr><th>The hard problem</th><td>Prediction &amp; storage: what to put where</td><td>Time: encode, ship, and stay near live</td></tr>
+    </tbody>
+  </table>
+
+  <p>Which collapses to one sentence worth keeping:</p>
+
+  <div class="mission">
+    <strong>Stored video buys speed with space</strong> — put copies everywhere, ahead of time.<br>
+    <strong>Live video can't buy anything ahead of time</strong> — so it buys speed with <em>sameness</em>: one fetch, fanned out to millions.
+  </div>
+
+  <h2>Recall before you check</h2>
+
+  <p>Answer out loud first. Retrieving it wrong and then seeing it beats reading it smoothly — that's the difficulty that makes it stick.</p>
+
+  <details class="recall">
+    <summary>Without scrolling up: what is the <em>single</em> fact that all the differences come from?</summary>
+    For stored video every segment already exists; for live, the next segment hasn't been created yet. Polling, no-seeking, cold caches, the lag behind live — all of it is downstream of that one fact. If you can rebuild the list from this sentence, you've got the lesson.
+  </details>
+
+  <details class="recall">
+    <summary>Why is a live player deliberately several seconds <em>behind</em> the live edge?</summary>
+    Because the buffer is its only protection against network wobble, and live gives it nothing to buffer except the small gap it leaves. Sitting back ~three segments (per <a href="https://www.rfc-editor.org/rfc/rfc8216#section-6.3.3">RFC 8216</a>) trades freshness for stability. Sit right on the edge and you stall whenever a segment is late.
+  </details>
+
+  <details class="recall">
+    <summary>From Lesson 1: DNS runs before any request. Does that change for live vs stored?</summary>
+    No — and that's the point worth noticing. The client still resolves a name to an <a href="../reference/glossary.html#ip">IP</a>, still sends <a href="../reference/glossary.html#request-response">requests</a>, still waits on <a href="../reference/glossary.html#latency">latency</a>. Live doesn't add new machinery to the request path; it changes <em>which</em> requests get made, and <em>when</em>. New systems are usually the old atom, rearranged.
+  </details>
+
+  <h2>Check yourself</h2>
+
+  <div class="quiz" data-answer="1"
+       data-explain="A live manifest has no EXT-X-ENDLIST, so the server keeps appending and the client must periodically reload to discover what's new. A VOD manifest is final — fetch it once.">
+    <div class="q">Why must a live player keep re-fetching the manifest?</div>
+    <button class="opt">The server address changes</button>
+    <button class="opt">New segments keep appearing</button>
+    <button class="opt">The video file enlarges</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="0"
+       data-explain="You cannot pre-position bytes that haven't been created. Netflix can ship a film to a cache near you last night; nobody can ship you a goal that hasn't been scored.">
+    <div class="q">Why can't a live segment be cached near you <em>before</em> you ask for it?</div>
+    <button class="opt">The bytes don't exist yet</button>
+    <button class="opt">The bytes are too large</button>
+    <button class="opt">The bytes are encrypted first</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="0"
+       data-explain="Identical simultaneous requests can be collapsed into one origin fetch that satisfies all of them. The synchronisation that causes the stampede is exactly what makes it cheap to serve.">
+    <div class="q">A million people watch the same goal at once. Why does that <em>help</em> the cache?</div>
+    <button class="opt">Everyone requests the same segment</button>
+    <button class="opt">Everyone requests a different segment</button>
+    <button class="opt">Everyone requests the origin directly</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="2"
+       data-explain="Stored video's difficulty is deciding what to store where, ahead of demand — a prediction and capacity problem. Live's difficulty is time: encode and deliver fast enough to stay near the edge.">
+    <div class="q">Netflix's catalogue is too big to keep everywhere. That makes stored video mainly a problem of…</div>
+    <button class="opt">encoding the video faster</button>
+    <button class="opt">polling the manifest often</button>
+    <button class="opt">predicting demand in advance</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="primary-source">
+    <span class="label">Primary source — read next</span>
+    <a href="https://jazco.dev/2024/07/05/hls/">How HLS Works</a> — Jaz, a Bluesky engineer, written just after building video for the platform. It makes the key idea concrete ("HLS is Just a Bunch of Text files") with real <code>.m3u8</code> examples. ~2,000 words, low-to-medium difficulty.
+    <br><br>
+    <strong>Be aware:</strong> it deliberately covers <em>stored</em> video only. That's the honest half — read it to make segments and manifests click, then get the live half from the spec itself: <a href="https://www.rfc-editor.org/rfc/rfc8216#section-6.2.2">RFC 8216 §6.2.2, "Live Playlists"</a> is only a few paragraphs and it's the actual authority behind every claim above.
+  </div>
+
+  <div class="mission">
+    <strong>Where this goes next.</strong> Twice now we've bumped into the same unanswered thing: "a cache near you," "the edge," "a box at your ISP." That's the <strong>CDN</strong>, and you've now got a genuine reason to want it — still owed. You chose the other option first: <a href="0003-one-server-becomes-many.html">Lesson 3 — One Server Becomes Many</a> answers how many servers hide behind one name.
+  </div>
+
+  <div class="ask-teacher">
+    <strong>I'm your teacher — ask me anything.</strong> This one came straight from your question at the end of Lesson 1, and it was a good question — that's exactly how to use me. Want to know why segments are ~6 seconds and not 1? How the player switches quality when your wifi dips? Why some live streams are 30 seconds behind and others 2? What happens at the origin when the match kicks off? Just ask.
+  </div>
+
+  <nav class="lesson-nav">
+    <span><a href="0001-the-requests-journey.html">← Lesson 1 — The Request's Journey</a></span>
+    <span><a href="0003-one-server-becomes-many.html">Next: Lesson 3 — One Server Becomes Many →</a></span>
+  </nav>
+
+  <footer>
+    <p><span class="cite">1</span> Segments, manifests, <code>EXT-X-ENDLIST</code>, <code>EXT-X-PLAYLIST-TYPE</code>, playlist reloading, and the three-target-duration rule: <a href="https://www.rfc-editor.org/rfc/rfc8216">RFC 8216 — HTTP Live Streaming</a> (the normative spec).
+    <span class="cite">2</span> Request collapsing: <a href="https://www.fastly.com/documentation/guides/concepts/edge-state/cache/request-collapsing/">Fastly documentation</a>.
+    <span class="cite">3</span> Pre-filling caches by geography and nightly fill: <a href="https://openconnect.netflix.com/en/">Netflix Open Connect</a>.
+    See the full <a href="../RESOURCES.md">resource list</a> and the <a href="../reference/glossary.html">glossary</a>.</p>
+  </footer>
+
+</main>

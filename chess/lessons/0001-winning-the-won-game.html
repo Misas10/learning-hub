@@ -1,0 +1,144 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 · Winning the Won Game</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/board.js"></script>
+<script src="../assets/quiz.js"></script>
+
+<header>
+  <div class="kicker">Chess · Lesson 1</div>
+  <h1>Winning the Won Game</h1>
+  <p class="lead">You win a knight on move 18. Twenty moves later you've lost. Nothing about your chess knowledge failed — you just played the wrong kind of chess for the position you were in.</p>
+</header>
+
+<main>
+
+  <div class="mission">
+    <strong>Why this, first?</strong> You said you get winning positions and don't <a href="../reference/glossary.html#convert">convert</a> them. Those are the cheapest rating points available: the hard part — getting ahead — is already done. This lesson gives you one rule and two questions to use from the moment you go up a piece.
+  </div>
+
+  <h2>The root fact</h2>
+
+  <p><strong>An extra piece is worth more the fewer pieces are left.</strong></p>
+
+  <p>Seven pieces against six is a small edge, and the other six can still make threats. One piece against none is total control. Every <a href="../reference/glossary.html#fair-trade">fair trade</a> moves you from the first situation toward the second. Chess.com's own reference puts it flatly: "Most of the time, when you are ahead in material you should proceed with even exchanges."<span class="cite">1</span></p>
+
+  <p>Everything else in this lesson follows from that one fact.</p>
+
+  <h2>Consequence 1: trade pieces</h2>
+
+  <p>If trades grow your advantage, make them. Queens first — the queen is the piece most able to cause you trouble. National Master RobRam, writing for chess.com: "trade pieces of the same value. I would do this even if I'm only up a pawn."<span class="cite">2</span></p>
+
+  <p>And don't be fussy about the price. Dan Heisman's example: "if you are ahead a knight and can force the trade of queens but it will double your pawns, double away."<span class="cite">3</span></p>
+
+  <h2>Consequence 2: but keep your pawns</h2>
+
+  <p>Follow the trades to the end. You have a king and a knight; they have a king. That is a <em>draw</em> — a lone knight or bishop cannot force checkmate. The win comes from a pawn that your extra piece escorts to <a href="../reference/glossary.html#promotion">promotion</a>. No pawns, no win.</p>
+
+  <p>So the rule has a second half, and it's the half people forget. Heisman words it carefully: "Make fair trades of pieces, not necessarily pawns."<span class="cite">3</span> Note that a <a href="../reference/glossary.html#piece">piece</a> means a knight, bishop, rook or queen. Pawns are not pieces.</p>
+
+  <p>Flip the board and you get the defender's rule for free: "When ahead pieces trade pieces, when behind pieces, trade pawns."<span class="cite">4</span></p>
+
+  <h2>Consequence 3: their only hope is chaos</h2>
+
+  <p>If calm trades win for you, the opponent's only chance is that something wild happens. Heisman: "Complications always favor the player who is losing."<span class="cite">3</span> So Heisman's first principle when ahead is "Think Defense First" — not passive play, just looking at their threats before your own ideas.</p>
+
+  <p>RobRam turns this into two questions to ask every move once you're ahead:<span class="cite">2</span></p>
+
+  <ol class="rules">
+    <li><strong>"How can I ruin this?"</strong></li>
+    <li><strong>"What's the easiest way to convert?"</strong></li>
+  </ol>
+
+  <h2>Your move</h2>
+
+  <p>You are White, to move, in all three positions. Decide before you look at the options. Every position was checked with the Stockfish engine.</p>
+
+  <div class="quiz" data-answer="0"
+       data-explain="The engine rates all three as winning by about the same margin, so this one is about which win is easiest for a human. After Qxd8 Black's most dangerous piece is gone and you are a knight up with nothing to fear. Keeping the queens on keeps Black's chances alive for no benefit.">
+    <div class="board" data-fen="r2q1rk1/pp3ppp/2p2n2/8/8/2NQ1N2/PPP2PPP/R4RK1 w - - 0 1" data-marks="d3 d8"></div>
+    <p class="board-caption">You are a knight up. The queens face each other on the d-file.</p>
+    <div class="q">Which move fits the position?</div>
+    <button class="opt">Qxd8 — trade the queens</button>
+    <button class="opt">Ng5 — start an attack</button>
+    <button class="opt">Qc4 — keep queens on</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="1"
+       data-explain="Ask “how can I ruin this?” first. Your king has no escape square, and both Qxb7 and Nd5 allow 1…Qe1+ 2.Rxe1 Rxe1 checkmate — a back-rank mate, a knight up. Qxe6 removes the queen that delivers it. One pawn is never worth the question.">
+    <div class="board" data-fen="4r1k1/pp3ppp/4q3/8/8/1QN5/PP3PPP/3R2K1 w - - 0 1" data-marks="b3 e6 b7"></div>
+    <p class="board-caption">You are a knight up. The b7 pawn is free, and the queens attack each other.</p>
+    <div class="q">Which move fits the position?</div>
+    <button class="opt">Qxb7 — grab the pawn</button>
+    <button class="opt">Qxe6 — trade the queens</button>
+    <button class="opt">Nd5 — centralise the knight</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="2"
+       data-explain="Black threatens …axb4, swapping off your last pawn and leaving king and bishop against king: a draw. Capturing on a5 loses the pawn to …Kxa5, and Kc4 allows …axb4. Only b5 keeps a pawn on the board, and the engine then finds a forced win. No pawns, no win.">
+    <div class="board" data-fen="8/8/1k6/p7/1P1K4/3B4/8/8 w - - 0 1" data-marks="b4 a5"></div>
+    <p class="board-caption">You are a bishop up, with one pawn each. Black's pawn attacks yours.</p>
+    <div class="q">Only one move wins. Which?</div>
+    <button class="opt">bxa5+ — capture the pawn</button>
+    <button class="opt">Kc4 — defend the pawn</button>
+    <button class="opt">b5 — push past it</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz" data-answer="2"
+       data-explain="Same root fact, other side of the board. Every piece trade makes their extra bishop matter more. Every pawn trade brings them closer to having nothing to promote — and a lone bishop cannot checkmate.">
+    <div class="q">Now you are the one a bishop down. Which trade helps you most?</div>
+    <button class="opt">Trade off the queens</button>
+    <button class="opt">Trade off the rooks</button>
+    <button class="opt">Trade off the pawns</button>
+    <div class="feedback"></div>
+  </div>
+
+  <h2>Recall before you check</h2>
+
+  <p>Answer out loud first. Getting it wrong and then seeing it beats reading it smoothly.</p>
+
+  <details class="recall">
+    <summary>Start from the root fact and rebuild the lesson. What follows from "an extra piece is worth more the fewer pieces are left"?</summary>
+    Trades grow the advantage → so make fair trades of pieces, queens first, even at a small structural cost → but the last step of the win is a pawn promoting, so keep pawns on → the defender wants the reverse (keep pieces, swap pawns) and their only other hope is complications → so look at their threats before your ideas: "How can I ruin this?", then "What's the easiest way to convert?"
+  </details>
+
+  <details class="recall">
+    <summary>Why is "trade everything" the wrong summary of this lesson?</summary>
+    Because pawns are not <a href="../reference/glossary.html#piece">pieces</a>. Trade everything and you reach king and knight against king, which is a draw. The third position above is exactly that trap.
+  </details>
+
+  <h2>Take it to the board</h2>
+
+  <p>The skill only counts in a real game. In your next five rapid games:</p>
+
+  <ol class="rules">
+    <li>The move you go up a piece or more, say the two questions in your head.</li>
+    <li>After the game, note one line: <em>was I ahead? did I win? if not, which move gave it back?</em></li>
+    <li>Bring those notes to the next session. They decide what Lesson 2 is.</li>
+  </ol>
+
+  <div class="primary-source">
+    <span class="label">Primary source</span>
+    Dan Heisman, <a href="https://www.chess.com/blog/danheisman/when-youre-way-ahead">"When You're Way Ahead"</a>. A short read from the coach who wrote the <em>Novice Nook</em> column. Six principles; this lesson covered three of them. Read it for the other three, especially the one about the clock.
+  </div>
+
+  <div class="ask-teacher">
+    <strong>Ask your teacher.</strong> Anything unclear, ask in the chat. Some questions worth asking: <em>What if my opponent simply refuses every trade? How do I actually win king and pawn against king once everything is traded? What counts as "ahead" — is one pawn enough to start trading?</em>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="../reference/glossary.html">Glossary</a>
+    <a href="../reference/winning-a-won-game.html">Cheat sheet: winning a won game →</a>
+  </div>
+
+</main>
+
+<footer>
+  <p>1. Chess.com, <a href="https://www.chess.com/terms/exchanging-pieces">"Piece Exchanges"</a>.<br>
+  2. NM RobRam, <a href="https://www.chess.com/article/view/how-to-convert-chess-advantage">"How To Convert An Advantage"</a>, chess.com, January 2026.<br>
+  3. Dan Heisman, <a href="https://www.chess.com/blog/danheisman/when-youre-way-ahead">"When You're Way Ahead"</a>, chess.com, updated January 2022.<br>
+  4. Dan Heisman, <a href="https://www.danheisman.com/middlegame-principles.html">"Middlegame Principles"</a>.</p>
+</footer>
